@@ -1,1 +1,35 @@
-C
+### Raw tag data exploration
+### Import file ending -all.txt
+setwd("C:/Users/Lucy/OneDrive - UGent/UGent-PC/Ljmitche/Documents/Motus/Gambia test")
+test <- read_delim("sgv2-4C87RPI4E1A3-023-2025-12-03T10-57-42.6510Z-all.txt")
+
+# separate into appropriate sections (may not always be all groups)
+check_data <- test %>% filter(port == "C")
+gps_data <- test %>% filter(port == "G")
+test <- test %>% filter(port == "p1")
+
+# change unix time to asPOSIXct
+# set format and then convert via mutate
+test$ts<-as.numeric(test$` timestamp`)
+test$signal<-as.numeric(test$signal)
+test <- test %>% mutate(time = as_datetime(ts, tz = "UTC", origin = "1970-01-01"))
+summary(test$time)
+
+# plot signal or snr by time
+test %>% ggplot(aes(x = time, y = signal)) +
+  theme_bw() + 
+  geom_point() + 
+  labs(x = "Time of day", y = "Signal")
+
+
+# summarise GPS info when not sure
+summary(gps_data)
+names(gps_data)<-c("port", "timestamp", "y", "x", "noise","ms")
+gps_data <- gps_data %>% mutate(time = as_datetime(timestamp, tz = "UTC", origin = "1970-01-01"))
+
+gps_data<- gps_data %>%
+  st_as_sf(coords = c("x", "y"), crs = 4326, remove = F)
+
+plot(st_geometry(gps_data),axes = TRUE)
+gps_data %>% print(n=38)
+
